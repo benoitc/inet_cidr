@@ -1,0 +1,7 @@
+.erlang.mk
+inet_cidr.d
+ebin/*.beam
+deps
+test/*.tmp
+test/*.beam
+.rebar
