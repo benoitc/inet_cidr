@@ -10,6 +10,8 @@
 -export([address_count/2]).
 -export([contains/2]).
 -export([to_string/1]).
+-export([is_ipv4/1]).
+-export([is_ipv6/1]).
 
 %% @doc parses S as a CIDR notation IP address and mask
 parse(S) ->
@@ -45,6 +47,28 @@ contains(_, _) ->
 
 to_string({StartAddr, _EndAddr, Len}) ->
     inet:ntoa(StartAddr) ++ "/" ++ integer_to_list(Len).
+
+%% @doc return true if the value is an ipv4 address
+is_ipv4({A, B, C, D}) ->
+    (((A >= 0) and (A =< 65535)) and
+     ((B >= 0) and (B =< 255)) and
+     ((C >= 0) and (C =< 255)) and
+     ((D >= 0) and (D =< 255)));
+is_ipv4(_) ->
+    false.
+
+%% @doc return true if the value is an ipv6 address
+is_ipv6({A, B, C, D, E, F, G, H}) ->
+    (((A >= 0) and (A =< 65535)) and
+     ((B >= 0) and (B =< 65535)) and
+     ((C >= 0) and (C =< 65535)) and
+     ((D >= 0) and (D =< 65535)) and
+     ((E >= 0) and (E =< 65535)) and
+     ((F >= 0) and (F =< 65535)) and
+     ((G >= 0) and (G =< 65535)) and
+     ((H >= 0) and (H =< 65535)));
+is_ipv6(_) ->
+    false.
 
 %% internals
 

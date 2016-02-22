@@ -70,3 +70,19 @@ ipv6_contains_test() ->
     ?assert(inet_cidr:contains(Block, {8193, 43981, 8192, 65535, 65535, 65535, 65535, 65535}) == false),
     ?assert(inet_cidr:contains(Block, {65535, 65535, 65535, 65535, 65535, 65535, 65535, 65535}) == false).
 
+is_ipv4_test() ->
+
+    ?assert(inet_cidr:is_ipv4({192,168,0,0}) == true),
+    ?assert(inet_cidr:is_ipv4({192,168,0,256}) == false),
+    ?assert(inet_cidr:is_ipv4({192,168,0}) == false),
+    ?assert(inet_cidr:is_ipv4({192,168,0,0,0}) == false),
+    {ok, Addr} = inet:parse_address("2001::abcd"),
+    ?assert(inet_cidr:is_ipv4(Addr) == false).
+
+is_ipv6_test() ->
+    ?assert(inet_cidr:is_ipv6({8193, 43981, 0, 0, 0, 0, 0, 0}) == true),
+    ?assert(inet_cidr:is_ipv6({192,168,0,0}) == false),
+    ?assert(inet_cidr:is_ipv6({8193, 43981, 0, 0, 0, 0, 0, 70000}) == false),
+    ?assert(inet_cidr:is_ipv6({8193, 43981, 0, 0, 0, 0, 0}) == false),
+    ?assert(inet_cidr:is_ipv6({8193, 43981, 0, 0, 0, 0, 0, 0, 0}) == false).
+
