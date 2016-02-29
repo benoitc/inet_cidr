@@ -50,7 +50,7 @@ to_string({StartAddr, _EndAddr, Len}) ->
 
 %% @doc return true if the value is an ipv4 address
 is_ipv4({A, B, C, D}) ->
-    (((A >= 0) and (A =< 65535)) and
+    (((A >= 0) and (A =< 255)) and
      ((B >= 0) and (B =< 255)) and
      ((C >= 0) and (C =< 255)) and
      ((D >= 0) and (D =< 255)));
