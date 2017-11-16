@@ -31,7 +31,7 @@ contains({{A, B, C, D}, {E, F, G, H}, _Len}, {W, X, Y, Z}) ->
     (((W >= A) and (W =< E)) and
      ((X >= B) and (X =< F)) and
      ((Y >= C) and (Y =< G)) and
-     ((A >= D) and (Z =< H)));
+     ((Z >= D) and (Z =< H)));
 contains({{A, B, C, D, E, F, G, H}, {I, J, K, L, M, N, O, P}, _Len},
          {R, S, T, U, V, W, X, Y}) ->
     (((R >= A) and (R =< I)) and
