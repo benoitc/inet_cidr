@@ -1,0 +1,12 @@
+{application, inet_cidr, [
+	{description, "CIDR library for Erlang"},
+	{vsn, "1.0.0"},
+	{modules, []},
+	{registered, []},
+	{applications, [kernel,stdlib]},
+
+  {maintainers, ["Benoit Chesneau"]},
+  {licenses, ["BSD"]},
+  {links, [{"Github", "https://gitlab.com/benoitc/inet_cidr"}]},
+  {pkg_name, "erl_cidr"}
+]}.

@@ -1,7 +1,9 @@
 .erlang.mk
 inet_cidr.d
-ebin/*.beam
+ebin
 deps
 test/*.tmp
 test/*.beam
 .rebar
+_build
+_checkouts
