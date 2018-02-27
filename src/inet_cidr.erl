@@ -2,7 +2,7 @@
 %%% This file is part of nat-pmp released under the MIT license.
 %%% See the NOTICE for more information.
 %%%
-%%% Copyright (c) 2016 Benoît Chesneau <benoitc@refuge.io>
+%%% Copyright (c) 20116-2017 Benoît Chesneau
 
 -module(inet_cidr).
 

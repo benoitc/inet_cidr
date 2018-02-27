@@ -6,7 +6,7 @@
 	{applications, [kernel,stdlib]},
 
   {maintainers, ["Benoit Chesneau"]},
-  {licenses, ["BSD"]},
+  {licenses, ["MIT"]},
   {links, [{"Github", "https://gitlab.com/benoitc/inet_cidr"}]},
   {pkg_name, "erl_cidr"}
 ]}.
