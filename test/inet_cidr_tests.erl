@@ -33,7 +33,8 @@ parse_ipv6_test() ->
 to_string_test() ->
 	?assertEqual(inet_cidr:to_string({{192,168,0,0}, {192,168,255,255}, 16}),
 				 "192.168.0.0/16"),
-	?assertEqual(inet_cidr:to_string({{8193, 43981, 0, 0, 0, 0, 0, 0}, {8193, 43981, 65535, 65535, 65535, 65535, 65535, 65535}, 32}), "2001:ABCD::/32").
+	?assertEqual(inet_cidr:to_string({{8193, 43981, 0, 0, 0, 0, 0, 0},
+                                    {8193, 43981, 65535, 65535, 65535, 65535, 65535, 65535}, 32}), "2001:abcd::/32").
 
 ipv4_address_count_test() ->
 	{ok, Addr} = inet:parse_address("192.168.0.0"),
