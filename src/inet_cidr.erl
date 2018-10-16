@@ -112,7 +112,7 @@ end_mask({_, _, _, _, _, _, _, _}, Len) when Len >= 0, Len =< 128 ->
         Len >= 96 -> {0, 0, 0, 0, 0, 0, bmask(Len, 16), 16#FFFF};
         Len >= 80 ->  {0, 0, 0, 0, 0, bmask(Len, 16), 16#FFFF, 16#FFFF};
         Len >= 64 -> {0, 0, 0, 0, bmask(Len, 16), 16#FFFF, 16#FFFF, 16#FFFF};
-        Len >= 49 -> {0, 0, 0, bmask(Len, 16), 16#FFFF, 16#FFFF, 16#FFFF,
+        Len >= 48 -> {0, 0, 0, bmask(Len, 16), 16#FFFF, 16#FFFF, 16#FFFF,
                       16#FFFF};
         Len >= 32 -> {0, 0, bmask(Len, 16), 16#FFFF, 16#FFFF, 16#FFFF, 16#FFFF,
                       16#FFFF};
