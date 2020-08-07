@@ -1,3 +1,5 @@
+[![Hex.pm version](https://img.shields.io/hexpm/v/covertool.svg?style=flat)](https://hex.pm/packages/erl_cidr)
+
 # inet_cidr
 
 CIDR library for Erlang.
@@ -5,6 +7,8 @@ CIDR library for Erlang.
 > Based on the Elixir library [InetCidr](https://github.com/Cobenian/inet_cidr) 
 but rewritten so it can be easily used in an Erlang application without 
 requiring Elixir.
+
+Available on [hex.pm](https://hex.pm) as [erl_cidr](https://hex.pm/packages/erl_cidr).
 
 ## Usage
 
