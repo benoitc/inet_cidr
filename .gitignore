@@ -7,3 +7,4 @@ test/*.beam
 .rebar
 _build
 _checkouts
+rebar.lock
