@@ -9,7 +9,10 @@
 -export([parse/1, parse/2]).
 -export([address_count/2]).
 -export([contains/2]).
+-export([usort_cidrs/1]).
+-export([merge_cidrs/1]).
 -export([to_string/1]).
+-export([to_binary/1]).
 -export([is_ipv4/1]).
 -export([is_ipv6/1]).
 
@@ -17,56 +20,67 @@
 parse(S) ->
     parse(S, false).
 
+parse(B, Adjust) when is_binary(B) ->
+    parse(binary_to_list(B), Adjust);
 parse(S, Adjust) ->
-    {StartAddr, PrefixLen} = parse_cidr(S, Adjust),
+    {StartAddr, PrefixLen} = parse_cidr(S, Adjust),
     EndAddr = calc_end_address(StartAddr, PrefixLen),
     {StartAddr, EndAddr, PrefixLen}.
 
-%% @doc returnt the number of IP addresses included in the CIDR block
+%% @doc return the number of IP addresses included in the CIDR block
 address_count(IP, Len) ->
-    1 bsl (bit_count(IP)  - Len).
+    1 bsl (bit_count(IP) - Len).
 
-%% @doc return true if the CIDR block contains the IP address, false otherwise.
-contains({{A, B, C, D}, {E, F, G, H}, _Len}, {W, X, Y, Z}) ->
-    (((W >= A) and (W =< E)) and
-     ((X >= B) and (X =< F)) and
-     ((Y >= C) and (Y =< G)) and
-     ((Z >= D) and (Z =< H)));
-contains({{A, B, C, D, E, F, G, H}, {I, J, K, L, M, N, O, P}, _Len},
-         {R, S, T, U, V, W, X, Y}) ->
-    (((R >= A) and (R =< I)) and
-     ((S >= B) and (S =< J)) and
-     ((T >= C) and (T =< K)) and
-     ((U >= D) and (U =< L)) and
-     ((V >= E) and (V =< M)) and
-     ((W >= F) and (W =< N)) and
-     ((X >= G) and (X =< O)) and
-     ((Y >= H) and (Y =< P)));
+%% @doc return true if the CIDR block contains the IP address or CIDR block, false otherwise.
+contains({StartAddr, EndAddr, _L}, Addr) when tuple_size(StartAddr) == tuple_size(EndAddr),
+                                              tuple_size(StartAddr) == tuple_size(Addr) ->
+    ip_gte(Addr, StartAddr) andalso ip_lte(Addr, EndAddr);
+
+contains({StartAddr1, EndAddr1, _L1},
+         {StartAddr2, EndAddr2, _L2}) when tuple_size(StartAddr1) == tuple_size(EndAddr1),
+                                           tuple_size(EndAddr1) == tuple_size(StartAddr2),
+                                           tuple_size(StartAddr2) == tuple_size(EndAddr2) ->
+    ip_gte(StartAddr2, StartAddr1) andalso ip_lte(StartAddr2, EndAddr1) andalso
+    ip_gte(EndAddr2, StartAddr1) andalso ip_lte(EndAddr2, EndAddr1);
+
 contains(_, _) ->
     false.
+
+%% @doc Unique sort a list of CIDR blocks, ordering IPv4 ranges before IPv6 ranges
+usort_cidrs(CIDRs) ->
+    lists:usort(fun cidr_lte/2, CIDRs).
+
+%% @doc Unique sort and merge a list of CIDR blocks, ordering IPv4 ranges before IPv6 ranges.
+%% For merging, CIDR blocks that are contained by other CIDR blocks are removed and
+%% adjacent CIDR blocks are merged into larger ones.
+merge_cidrs(CIDRs) ->
+    merge_sorted_cidrs(usort_cidrs(CIDRs)).
 
 to_string({StartAddr, _EndAddr, Len}) ->
     inet:ntoa(StartAddr) ++ "/" ++ integer_to_list(Len).
 
+to_binary({StartAddr, _EndAddr, Len}) ->
+    <<(list_to_binary(inet:ntoa(StartAddr)))/binary, "/", (integer_to_binary(Len))/binary>>.
+
 %% @doc return true if the value is an ipv4 address
 is_ipv4({A, B, C, D}) ->
-    (((A >= 0) and (A =< 255)) and
-     ((B >= 0) and (B =< 255)) and
-     ((C >= 0) and (C =< 255)) and
-     ((D >= 0) and (D =< 255)));
+    (((A >= 0) andalso (A =< 255)) andalso
+     ((B >= 0) andalso (B =< 255)) andalso
+     ((C >= 0) andalso (C =< 255)) andalso
+     ((D >= 0) andalso (D =< 255)));
 is_ipv4(_) ->
     false.
 
 %% @doc return true if the value is an ipv6 address
 is_ipv6({A, B, C, D, E, F, G, H}) ->
-    (((A >= 0) and (A =< 65535)) and
-     ((B >= 0) and (B =< 65535)) and
-     ((C >= 0) and (C =< 65535)) and
-     ((D >= 0) and (D =< 65535)) and
-     ((E >= 0) and (E =< 65535)) and
-     ((F >= 0) and (F =< 65535)) and
-     ((G >= 0) and (G =< 65535)) and
-     ((H >= 0) and (H =< 65535)));
+    (((A >= 0) andalso (A =< 65535)) andalso
+     ((B >= 0) andalso (B =< 65535)) andalso
+     ((C >= 0) andalso (C =< 65535)) andalso
+     ((D >= 0) andalso (D =< 65535)) andalso
+     ((E >= 0) andalso (E =< 65535)) andalso
+     ((F >= 0) andalso (F =< 65535)) andalso
+     ((G >= 0) andalso (G =< 65535)) andalso
+     ((H >= 0) andalso (H =< 65535)));
 is_ipv6(_) ->
     false.
 
@@ -77,7 +91,7 @@ bit_count({_, _, _, _, _, _, _, _}) -> 128.
 
 parse_cidr(S, Adjust) ->
     [Prefix, LenStr] = re:split(S, "/", [{return, list}, {parts, 2}]),
-    {ok, StartAddr} = inet:parse_address(Prefix),
+    {ok, StartAddr} = inet:parse_address(Prefix),
     {PrefixLen, _} = string:to_integer(LenStr),
     Masked = band_with_mask(StartAddr, start_mask(StartAddr, PrefixLen)),
 
@@ -141,4 +155,59 @@ band_with_mask({A, B, C, D, E, F, G, H}, {I, J, K, L, M, N, O, P}) ->
     {A band I, B band J, C band K, D band L, E band M, F band N, G band O,
      H band P}.
 
+ip_lte({A, B, C, D1}, {A, B, C, D2}) -> D1 =< D2;
+ip_lte({A, B, C1, _}, {A, B, C2, _}) -> C1 =< C2;
+ip_lte({A, B1, _, _}, {A, B2, _, _}) -> B1 =< B2;
+ip_lte({A1, _, _, _}, {A2, _, _, _}) -> A1 =< A2;
+ip_lte({A, B, C, D, E, F, G, H1}, {A, B, C, D, E, F, G, H2}) -> H1 =< H2;
+ip_lte({A, B, C, D, E, F, G1, _}, {A, B, C, D, E, F, G2, _}) -> G1 =< G2;
+ip_lte({A, B, C, D, E, F1, _, _}, {A, B, C, D, E, F2, _, _}) -> F1 =< F2;
+ip_lte({A, B, C, D, E1, _, _, _}, {A, B, C, D, E2, _, _, _}) -> E1 =< E2;
+ip_lte({A, B, C, D1, _, _, _, _}, {A, B, C, D2, _, _, _, _}) -> D1 =< D2;
+ip_lte({A, B, C1, _, _, _, _, _}, {A, B, C2, _, _, _, _, _}) -> C1 =< C2;
+ip_lte({A, B1, _, _, _, _, _, _}, {A, B2, _, _, _, _, _, _}) -> B1 =< B2;
+ip_lte({A1, _, _, _, _, _, _, _}, {A2, _, _, _, _, _, _, _}) -> A1 =< A2.
 
+ip_gte({A, B, C, D1}, {A, B, C, D2}) -> D1 >= D2;
+ip_gte({A, B, C1, _}, {A, B, C2, _}) -> C1 >= C2;
+ip_gte({A, B1, _, _}, {A, B2, _, _}) -> B1 >= B2;
+ip_gte({A1, _, _, _}, {A2, _, _, _}) -> A1 >= A2;
+ip_gte({A, B, C, D, E, F, G, H1}, {A, B, C, D, E, F, G, H2}) -> H1 >= H2;
+ip_gte({A, B, C, D, E, F, G1, _}, {A, B, C, D, E, F, G2, _}) -> G1 >= G2;
+ip_gte({A, B, C, D, E, F1, _, _}, {A, B, C, D, E, F2, _, _}) -> F1 >= F2;
+ip_gte({A, B, C, D, E1, _, _, _}, {A, B, C, D, E2, _, _, _}) -> E1 >= E2;
+ip_gte({A, B, C, D1, _, _, _, _}, {A, B, C, D2, _, _, _, _}) -> D1 >= D2;
+ip_gte({A, B, C1, _, _, _, _, _}, {A, B, C2, _, _, _, _, _}) -> C1 >= C2;
+ip_gte({A, B1, _, _, _, _, _, _}, {A, B2, _, _, _, _, _, _}) -> B1 >= B2;
+ip_gte({A1, _, _, _, _, _, _, _}, {A2, _, _, _, _, _, _, _}) -> A1 >= A2.
+
+% @private Compare 2 CIDR specifications based on the following criteria:
+% * IPv4 < IPv6
+% * If start range matches, sort on mask length
+% * Otherwise, sort on start IP
+cidr_lte({StartAddr, _, L1},
+         {StartAddr, _, L2}) ->
+    L1 =< L2;
+cidr_lte({StartAddr1, _, _L1},
+         {StartAddr2, _, _L2}) when tuple_size(StartAddr1) =/= tuple_size(StartAddr2) ->
+    tuple_size(StartAddr1) =< tuple_size(StartAddr2);
+cidr_lte({StartAddr1, _, _L1},
+         {StartAddr2, _, _L2}) when tuple_size(StartAddr1) == tuple_size(StartAddr2) ->
+    ip_lte(StartAddr1, StartAddr2).
+
+%% @private merge a list of uniquely sorted CIDR blocks to their minimal
+%% representation.
+merge_sorted_cidrs(SortedCIDRs) ->
+    merge_sorted_cidrs(SortedCIDRs, []).
+
+merge_sorted_cidrs([], Acc) ->
+    lists:reverse(Acc);
+merge_sorted_cidrs([CIDR], Acc) ->
+    lists:reverse([CIDR | Acc]);
+merge_sorted_cidrs([CIDR1, CIDR2 | SortedCIDRs], Acc) ->
+    case contains(CIDR1, CIDR2) of
+        true ->
+            merge_sorted_cidrs([CIDR1 | SortedCIDRs], Acc);
+        false ->
+            merge_sorted_cidrs([CIDR2 | SortedCIDRs], [CIDR1 | Acc])
+    end.
