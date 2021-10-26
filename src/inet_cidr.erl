@@ -112,16 +112,24 @@ bit_count({_, _, _, _}) -> 32;
 bit_count({_, _, _, _, _, _, _, _}) -> 128.
 
 parse_cidr(S, Adjust) ->
-    [Prefix, LenStr] = re:split(S, "/", [{return, list}, {parts, 2}]),
-    {ok, StartAddr} = inet:parse_address(Prefix),
-    {PrefixLen, _} = string:to_integer(LenStr),
-    Masked = band_with_mask(StartAddr, start_mask(StartAddr, PrefixLen)),
-
+  {StartAddr, Masked} =
+        case re:split(S, "/", [{return, list}, {parts, 2}]) of
+            [Prefix, LenStr] ->
+                {ok, Addr} = inet:parse_address(Prefix),
+                {PrefixLen, _} = string:to_integer(LenStr),
+                {Addr, band_with_mask(Addr, start_mask(Addr, PrefixLen))};
+            [Prefix] ->
+                {ok, Addr} = inet:parse_address(Prefix),
+                PrefixLen = case is_ipv6(Addr) of
+                                true -> 128;
+                                false -> 32
+                            end,
+                {Addr, band_with_mask(Addr, start_mask(Addr, PrefixLen))}
+        end,
     if
         Adjust /= true, Masked /= StartAddr -> error(invalid_cidr);
         true -> ok
     end,
-
     {Masked, PrefixLen}.
 
 start_mask({_, _, _, _}=Addr, Len) when Len >= 0, Len =< 32 ->
