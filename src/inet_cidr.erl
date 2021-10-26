@@ -16,10 +16,21 @@
 -export([is_ipv4/1]).
 -export([is_ipv6/1]).
 
+-type cidr() :: {Start :: inet:ip4_address(), End :: inet:ip4_address(), MaskLen :: 0..32}
+              | {Start :: inet:ip6_address(), End :: inet:ip6_address(), MaskLen :: 0..128}.
+
+-export_type([cidr/0]).
+
+-spec parse(string() | binary()) -> cidr().
 %% @doc parses S as a CIDR notation IP address and mask
 parse(S) ->
     parse(S, false).
 
+-spec parse(string() | binary(), Adjust :: boolean()) -> cidr().
+%% @doc parses S as a CIDR notation IP address and mask.
+%% If Adjust = `true', allow the IP to contain values beyond the mask and
+%% silently ignore them. Otherwise, enforce that the IP address is fully inside
+%% the specified mask (the default behavior of `parse/1').
 parse(B, Adjust) when is_binary(B) ->
     parse(binary_to_list(B), Adjust);
 parse(S, Adjust) ->
@@ -27,10 +38,13 @@ parse(S, Adjust) ->
     EndAddr = calc_end_address(StartAddr, PrefixLen),
     {StartAddr, EndAddr, PrefixLen}.
 
+-spec address_count(inet:ip4_address(), MaskLen :: 0..32)  -> pos_integer();
+                   (inet:ip6_address(), MaskLen :: 0..128) -> pos_integer().
 %% @doc return the number of IP addresses included in the CIDR block
 address_count(IP, Len) ->
     1 bsl (bit_count(IP) - Len).
 
+-spec contains(cidr(), inet:ip_address() | cidr()) -> boolean().
 %% @doc return true if the CIDR block contains the IP address or CIDR block, false otherwise.
 contains({StartAddr, EndAddr, _L}, Addr) when tuple_size(StartAddr) == tuple_size(EndAddr),
                                               tuple_size(StartAddr) == tuple_size(Addr) ->
@@ -46,22 +60,29 @@ contains({StartAddr1, EndAddr1, _L1},
 contains(_, _) ->
     false.
 
+-spec usort_cidrs([cidr()]) -> [cidr()].
 %% @doc Unique sort a list of CIDR blocks, ordering IPv4 ranges before IPv6 ranges
 usort_cidrs(CIDRs) ->
     lists:usort(fun cidr_lte/2, CIDRs).
 
+-spec merge_cidrs([cidr()]) -> [cidr()].
 %% @doc Unique sort and merge a list of CIDR blocks, ordering IPv4 ranges before IPv6 ranges.
 %% For merging, CIDR blocks that are contained by other CIDR blocks are removed and
 %% adjacent CIDR blocks are merged into larger ones.
 merge_cidrs(CIDRs) ->
     merge_sorted_cidrs(usort_cidrs(CIDRs)).
 
+-spec to_string(cidr()) -> string().
+%% @doc return a CIDR block as a string.
 to_string({StartAddr, _EndAddr, Len}) ->
     inet:ntoa(StartAddr) ++ "/" ++ integer_to_list(Len).
 
+-spec to_binary(cidr()) -> binary().
+%% @doc return a CIDR block as a binary string.
 to_binary({StartAddr, _EndAddr, Len}) ->
     <<(list_to_binary(inet:ntoa(StartAddr)))/binary, "/", (integer_to_binary(Len))/binary>>.
 
+-spec is_ipv4(inet:ip_address()) -> boolean().
 %% @doc return true if the value is an ipv4 address
 is_ipv4({A, B, C, D}) ->
     (((A >= 0) andalso (A =< 255)) andalso
@@ -71,6 +92,7 @@ is_ipv4({A, B, C, D}) ->
 is_ipv4(_) ->
     false.
 
+-spec is_ipv6(inet:ip_address()) -> boolean().
 %% @doc return true if the value is an ipv6 address
 is_ipv6({A, B, C, D, E, F, G, H}) ->
     (((A >= 0) andalso (A =< 65535)) andalso
