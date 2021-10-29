@@ -1,4 +1,4 @@
-[![Hex.pm version](https://img.shields.io/hexpm/v/covertool.svg?style=flat)](https://hex.pm/packages/erl_cidr)
+[![Hex.pm version](https://img.shields.io/hexpm/v/erl_cidr.svg?style=flat)](https://hex.pm/packages/erl_cidr)
 
 # inet_cidr
 
